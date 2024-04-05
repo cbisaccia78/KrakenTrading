@@ -1,0 +1,62 @@
+
+BTC/USD subscription data feed structures
+____________________________________________________________________________________________________________________________________________________________
+NAME = TICKET
+
+{
+    "a": ["67501.30000", 1, "1.000"]: This field represents the ask side of the order book. It contains an array with three elements:
+    "67501.30000": The price of the lowest ask order.
+    1: The number of ask orders at this price level.
+    "1.000": The volume of the lowest ask order.
+
+    "b": ["67501.20000", 1, "1.000"]: Similar to the "a" field, this represents the bid side of the order book. It contains an array with three elements:
+        "67501.20000": The price of the highest bid order.
+        1: The number of bid orders at this price level.
+        "1.000": The volume of the highest bid order.
+
+    "c": ["67501.20000", "0.00730552"]: This field represents the last trade executed. It contains an array with two elements:
+        "67501.20000": The price of the last trade.
+        "0.00730552": The volume of the last trade.
+
+    "v": ["80.06127649", "102.24974195"]: This field represents volume information. It contains an array with two elements:
+        "80.06127649": The volume weighted average price (VWAP) for the last 24 hours.
+        "102.24974195": The total volume traded in the last 24 hours.
+
+    "p": ["67536.01140", "67565.02445"]: This field represents price information. It contains an array with two elements:
+        "67536.01140": The highest price traded in the last 24 hours.
+        "67565.02445": The lowest price traded in the last 24 hours.
+
+    "t": [14684, 18650]: This field represents trade count information. It contains an array with two elements:
+        14684: The number of trades executed in the last 24 hours.
+        18650: The number of trades executed in the current 24-hour period.
+
+    "l": ["67500.00000", "67500.00000"]: This field represents price level information. It contains an array with two elements:
+        "67500.00000": The lowest price of the current 24-hour period.
+        "67500.00000": The highest price of the current 24-hour period.
+
+    "h": ["67536.01140", "67572.12770"]: This field represents high price and low price information. It contains an array with two elements:
+        "67536.01140": The highest price of the current 24-hour period.
+        "67572.12770": The lowest price of the current 24-hour period.
+
+    "o": "67517.30000": This field represents the opening price of the current 24-hour period.
+}
+
+____________________________________________________________________________________________________________________________________________________________
+
+NAME = TRADE
+
+    [119930881, [['67543.60000', '0.00107994', '1712261782.789382', 's', 'l', '']], 'trade', 'XBT/USD']:
+
+        119930881: This is the trade ID, which uniquely identifies the trade event.
+
+        [['67543.60000', '0.00107994', '1712261782.789382', 's', 'l', '']]: This is a nested list containing trade details. Inside this list:
+            '67543.60000': The price at which the trade occurred.
+            '0.00107994': The volume of the trade.
+            '1712261782.789382': The timestamp of the trade in seconds since the Unix epoch.
+            's': The side of the trade. It could be 'b' for buy or 's' for sell.
+            'l': The type of order that triggered the trade. It could be 'l' for limit order.
+            '': Extra field (possibly not used in this context).
+
+        'trade': This indicates the type of event, which is a trade event in this case.
+
+        'XBT/USD': This is the trading pair for which the trade occurred.
