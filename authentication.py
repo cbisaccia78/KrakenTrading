@@ -4,10 +4,11 @@ import hmac
 import base64
 import time
 import urllib
+import os
 
 url = 'https://api.kraken.com'
-api_key = 'your_key_here'
-api_secret = 'your_secret_here'
+api_key = os.environ['KrakenApiKey']
+api_secret = os.environ['KrakenSecretKey']
 
 
 def get_kraken_signature(urlpath, data, secret):

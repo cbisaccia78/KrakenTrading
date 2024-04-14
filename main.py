@@ -11,7 +11,6 @@ PUBLIC_URL = "wss://ws.kraken.com/"
 PRIVATE_URL = "wss://ws-auth.kraken.com/"
 
 
-
 # Function to handle incoming messages
 def on_message(ws, message):
     # Parse the incoming message (assuming it's JSON)

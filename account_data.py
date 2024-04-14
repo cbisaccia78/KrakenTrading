@@ -9,4 +9,6 @@ def getAccountBalance():
     resp = kraken_request('/0/private/Balance', {
         "nonce": str(int(1000*time.time()))
     })
-    return resp
+    return resp.json()
+
+print(getAccountBalance())
