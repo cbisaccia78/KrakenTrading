@@ -1,23 +1,19 @@
 import requests
 
-def get_currency_pairs():
-    url = "https://api.kraken.com/0/public/AssetPairs"
+def get_result(url):
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for HTTP errors
         data = response.json()
+        error = data['error']
 
-        if 'error' in data:
-            print("API Error:", data['error'])
+        if error:
+            print("API Error:", error)
             return None
 
-        currency_pairs = list(data['result'].keys())
+        currency_pairs = data['result']
         return currency_pairs
 
     except requests.exceptions.RequestException as e:
         print("Request Error:", e)
         return None
-
-resp = requests.get('https://api.kraken.com/0/public/Assets')
-
-print(resp.json())
