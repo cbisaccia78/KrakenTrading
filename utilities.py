@@ -25,3 +25,46 @@ def extend_return(a, b):
 
 def flatten_lists(lists):
     return functools.reduce(extend_return, lists)
+
+def vectorize_ticker_stream(ticker=[]):
+    """
+    Until every pair has had an example processed, we won't be able 
+    to vectorize the whole thing. This implies that we must throw out 
+    some early samples until each pair has been encountered at least once.
+    """
+    
+
+    all_pairs = set()
+    for item in ticker:
+        time_received = list(item.keys())[0]
+        pair = item[time_received]['pair']
+        all_pairs.add(pair)
+
+    pairs_so_far = set()
+    last_known_pair_info = {}
+    for i, item in enumerate(ticker):
+        time_received = list(item.keys())[0]
+        pair = item[time_received]['pair']
+        pairs_so_far.add(pair)
+
+        data = item[time_received]['data'].values()
+        flattened_data = flatten_lists(data)
+        last_known_pair_info[pair] = flattened_data
+
+        if not all_pairs.difference(pairs_so_far):
+            break
+    
+    all_pairs = sorted(all_pairs) # enforce ordering of data
+    # by this point last_known_pair_info has every pair populated.
+    for item in ticker[i:]:
+        time_received = list(item.keys())[0]
+        pair = item[time_received]['pair']
+        data = item[time_received]['data'].values()
+
+        last_known_pair_info[pair] = data
+
+        vectorized_data = [time_received]
+        for pair in all_pairs:
+            data = last_known_pair_info[pair]
+            flattened_data = flatten_lists(data)
+            vectorized_data.extend(flattened_data)
