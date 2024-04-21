@@ -18,13 +18,9 @@ def get_result(url):
     except requests.exceptions.RequestException as e:
         print("Request Error:", e)
         return None
-    
-def extend_return(a, b):
-    a.extend(b)
-    return a
 
-def flatten_lists(lists):
-    return functools.reduce(extend_return, lists)
+def flatten_lists(list_of_lists):
+    return functools.reduce(lambda x,y: x+y, list_of_lists)
 
 def vectorize_ticker_stream(ticker=[]):
     """
@@ -47,24 +43,35 @@ def vectorize_ticker_stream(ticker=[]):
         pair = item[time_received]['pair']
         pairs_so_far.add(pair)
 
-        data = item[time_received]['data'].values()
-        flattened_data = flatten_lists(data)
+        data = item[time_received]['data']
+        o_data = data['o']
+        data['o'] = [o_data]
+        values = data.values()
+        flattened_data = flatten_lists(values)
         last_known_pair_info[pair] = flattened_data
 
         if not all_pairs.difference(pairs_so_far):
             break
     
+    # undo array wrapping of o of last element so that 
+    #this element is not double wrapped in following logic
+    item = ticker[i]
+    time_received = list(item.keys())[0]
+    data = item[time_received]['data']
+    data['o'] = data['o'][0]
+
     all_pairs = sorted(all_pairs) # enforce ordering of data
     # by this point last_known_pair_info has every pair populated.
     for item in ticker[i:]:
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
-        data = item[time_received]['data'].values()
-
-        last_known_pair_info[pair] = data
+        data = item[time_received]['data']
+        data['o'] = [data['o']]
+        values = data.values()
+        flattened_data = flatten_lists(values)
+        last_known_pair_info[pair] = flattened_data
 
         vectorized_data = [time_received]
         for pair in all_pairs:
-            data = last_known_pair_info[pair]
-            flattened_data = flatten_lists(data)
+            flattened_data = last_known_pair_info[pair]
             vectorized_data.extend(flattened_data)
