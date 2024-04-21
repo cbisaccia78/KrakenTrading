@@ -17,6 +17,10 @@ def get_asset_info(assets=[]):
         
     return get_result(url)
 
+def get_all_asset_altnames():
+    assets = get_asset_info()
+    return [assets[asset]['altname'] for asset in assets]
+
 def get_currency_pairs(pairs=[]):
     url = PUBLIC_URL_BASE + "AssetPairs"
     if pairs:
@@ -39,5 +43,6 @@ def get_all_wsnames():
     
     return [coin['wsname'] for coin in result.values() if 'wsname' in coin]
 
-print(get_asset_info(['XBT']))
-print(get_ticker_info(['XBTUSD']))
+#print(get_asset_info(['XBT']))
+#print(get_ticker_info(['XBTUSD', 'ETHUSD', 'LTCUSD']))
+#print(get_all_asset_altnames())
