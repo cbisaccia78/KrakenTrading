@@ -81,3 +81,20 @@ subscription 	object
     snapshot 	boolean 	Optional - whether to send historical feed data snapshot upon subscription (supported only for ownTrades subscriptions; default = true)
     token 	string 	Optional - base64-encoded authentication token for private-data endpoints
     consolidate_taker 	boolean 	Optional - for ownTrades, whether to consolidate order fills by root taker trade(s), default = true. If false, all order fills will show separately.
+
+
+When and why does the WebSocket send updated data?
+
+When and why market data or account data is received, depends upon the feed that you are subscribed to. For example:
+
+Ticker:  When there is a trade or batch of trades for a currency pair, a ticker message is published for that pair. You will only receive this message if you are subscribed to the ticker feed for this pair.
+
+Trade:  Similarly, when there is a trade or batch of trades for a currency pair, a trade message is also published for that pair. You will only receive this message if you are subscribed to the trade feed for this pair.
+
+OHLC: An updated OHLC interval is published for each interval when a trade or batch of trades for a currency pair is executed. You will only receive updates for the intervals that you are subscribed to. After crossing an interval border, no message is sent until the next trade occurs.
+
+Book: An initial snapshot of the order book with the chosen depth is published when first subscribed to the book feed.
+
+As new orders are added to the order book or trades are executed that affect the order book depth you are subscribed to, a message is published containing order book updates for any affected price levels and volumes. These updates can contain only bids, only asks, or both bids and asks. See How to build an order book below for details.
+
+Spread: When a new highest bid or lowest ask order is placed, or a trade is executed that changes the best bid or best ask price, a spread message is published with the updated bid and ask prices.
