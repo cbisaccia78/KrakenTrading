@@ -44,21 +44,12 @@ def vectorize_ticker_stream(ticker=[]):
         pairs_so_far.add(pair)
 
         data = item[time_received]['data']
-        o_data = data['o']
-        data['o'] = [o_data]
         values = data.values()
         flattened_data = flatten_lists(values)
         last_known_pair_info[pair] = flattened_data
 
         if not all_pairs.difference(pairs_so_far):
             break
-    
-    # undo array wrapping of o of last element so that 
-    #this element is not double wrapped in following logic
-    item = ticker[i]
-    time_received = list(item.keys())[0]
-    data = item[time_received]['data']
-    data['o'] = data['o'][0]
 
     all_pairs = sorted(all_pairs) # enforce ordering of data
     # by this point last_known_pair_info has every pair populated.
@@ -66,7 +57,6 @@ def vectorize_ticker_stream(ticker=[]):
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
         data = item[time_received]['data']
-        data['o'] = [data['o']]
         values = data.values()
         flattened_data = flatten_lists(values)
         last_known_pair_info[pair] = flattened_data
