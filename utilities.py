@@ -53,6 +53,7 @@ def vectorize_ticker_stream(ticker=[]):
 
     all_pairs = sorted(all_pairs) # enforce ordering of data
     # by this point last_known_pair_info has every pair populated.
+    vectorized_tickers = []
     for item in ticker[i:]:
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
@@ -65,3 +66,6 @@ def vectorize_ticker_stream(ticker=[]):
         for pair in all_pairs:
             flattened_data = last_known_pair_info[pair]
             vectorized_data.extend(flattened_data)
+        vectorized_tickers.append(vectorized_data)
+    
+    return vectorized_tickers, all_pairs
