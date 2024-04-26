@@ -40,7 +40,9 @@ NAME = TICKET
         "67536.01140": The highest price of the current 24-hour period.
         "67572.12770": The lowest price of the current 24-hour period.
 
-    "o": "67517.30000": This field represents the opening price of the current 24-hour period.
+    "o": ["67517.30000", "67342.3000]: This field represents the opening price
+        "67517.30000" - value today
+        "67342.3000 - value over last 24 hours
 }
 
 ____________________________________________________________________________________________________________________________________________________________
