@@ -1,5 +1,11 @@
 import requests
 import functools
+import datetime
+
+import pandas as pd
+import numpy as np
+
+SECONDS_IN_DAY = 24*60*60
 
 def get_result(url):
     try:
@@ -62,10 +68,76 @@ def vectorize_ticker_stream(ticker=[]):
         flattened_data = flatten_lists(values)
         last_known_pair_info[pair] = flattened_data
 
-        vectorized_data = [time_received]
+        timestamp = datetime.datetime.fromisoformat(time_received).timestamp()
+        vectorized_data = [timestamp]
         for pair in all_pairs:
             flattened_data = last_known_pair_info[pair]
             vectorized_data.extend(flattened_data)
         vectorized_tickers.append(vectorized_data)
     
     return vectorized_tickers, all_pairs
+
+def equal_time_spacing(X, t_space=0):
+    """
+    NOT FINISHED
+
+    Assumes X[:, 0] are timestamps, and X is sorted by time.
+
+    Given t, where t_space is a float between (0, inf)
+
+    Warning: If t_space is too large examples will be skipped. 
+    
+    Default is 0, which will cause t = min(abs(t_i - t_j)) for all i, j
+    """
+    if t_space < 0:
+        raise ValueError("t must be >= 0")
+    
+    if t_space == 0:
+        sorted_X_0 = X[X[:, 0].argsort(), 0]
+        X_0_diff = np.diff(sorted_X_0)
+        sorted_X_0_diff = X_0_diff[X_0_diff.argsort()]
+        t_space = sorted_X_0_diff[0] # minimum diff
+    
+    num_examples = X.shape[0]
+
+    min_t = X[0][0]
+    t = min_t
+    i = 0
+    X_ret = []
+    while i < num_examples:
+        x_i = X[i]
+        X_ret.append(x_i)
+        t = t + t_space
+        next_t = X[i+1][0]
+        while t < next_t:
+            # append previous vector with new t
+            x_i_copy = x_i.copy()
+            x_i_copy[0] = t
+            X_ret.append(x_i_copy)
+            t = t + t_space
+        # if the next t falls in between t+1 and t+2, just append t_1 as filler
+        # if t increment overshot t+1, use t+2? (Can this happen?)
+
+def vectorize_windows(X, window_length, stride=1, drop_extras=True):
+    num_examples = X.shape[0]
+    
+    X_ret = []
+    window_base = 0
+    while window_base + window_length <= num_examples:
+        X_ret.append(np.hstack([x for x in X[window_base:window_base+window_length]]))
+        window_base = window_base + stride
+
+    if not drop_extras:
+        X_ret.append(np.hstack([x for x in X[window_base:window_base+window_length]]))
+        window_base = window_base + stride
+
+    return np.array(X_ret)
+
+def timestamp_to_percent(column):
+
+    if not (isinstance(column, (pd.Series, np.ndarray))):
+        raise ValueError("Column must be ndarray or dataframe")
+    
+    # put timestamp on interval [0, 1]
+    percent_of_day_column = (column % SECONDS_IN_DAY) / SECONDS_IN_DAY
+    return percent_of_day_column
