@@ -31,8 +31,6 @@ X = np.array(ticker_stream, dtype=np.float32)
 
 X[:, 0] = timestamp_to_percent(X[:, 0])
 
-print(X[0])
-
 # train test validation split
 num_examples = X.shape[0]
 
