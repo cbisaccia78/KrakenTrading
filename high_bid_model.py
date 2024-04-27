@@ -73,8 +73,8 @@ X_test_std = X_test_std[:-1]
 
 # create datasets
 train_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
-valid_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
-test_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
+valid_ds = tf.data.Dataset.from_tensor_slices((X_valid_std, y_valid_std))
+test_ds = tf.data.Dataset.from_tensor_slices((X_test_std, y_test_std))
 
 
 # create model
