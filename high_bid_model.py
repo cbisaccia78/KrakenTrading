@@ -50,7 +50,7 @@ X_train_std = scalar.fit_transform(X_train)
 X_valid_std = scalar.transform(X_valid)
 X_test_std = scalar.transform(X_test)
 
-window_len = 5
+window_len = 20
 stride = 1
 
 # create labels
@@ -62,9 +62,9 @@ y_valid_std = X_valid_std[window_len:, btc_bid_index]
 y_test_std = X_test_std[window_len:, btc_bid_index]
 
 # create windows
-X_train_std = vectorize_windows(X_train_std, 5, stride)
-X_valid_std = vectorize_windows(X_valid_std, 5, stride)
-X_test_std = vectorize_windows(X_test_std, 5, stride)
+X_train_std = vectorize_windows(X_train_std, window_len, stride)
+X_valid_std = vectorize_windows(X_valid_std, window_len, stride)
+X_test_std = vectorize_windows(X_test_std, window_len, stride)
 
 # remove final row (no label for it)
 X_train_std = X_train_std[:-1]
