@@ -71,17 +71,20 @@ X_train_std = X_train_std[:-1]
 X_valid_std = X_valid_std[:-1]
 X_test_std = X_test_std[:-1]
 
+batch_size = 32
+
 # create datasets
-train_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
-valid_ds = tf.data.Dataset.from_tensor_slices((X_valid_std, y_valid_std))
-test_ds = tf.data.Dataset.from_tensor_slices((X_test_std, y_test_std))
+train_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std)).batch(batch_size)
+valid_ds = tf.data.Dataset.from_tensor_slices((X_valid_std, y_valid_std)).batch(batch_size)
+test_ds = tf.data.Dataset.from_tensor_slices((X_test_std, y_test_std)).batch(batch_size)
 
 
 # create model
 num_input_parameters = X_train_std.shape[1]
 model = keras.Sequential([
-    keras.layers.Dense(1024, activation='relu', input_shape=(num_input_parameters, )),
+    keras.layers.Dense(1024, activation='relu', input_shape=(None, num_input_parameters)),
     keras.layers.Dropout(rate=0.5),
+    keras.layers.Dense(1024, activation='relu'),
     keras.layers.Dense(1, activation='linear')
 ])
 
