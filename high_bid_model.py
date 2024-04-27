@@ -66,16 +66,21 @@ X_train_std = vectorize_windows(X_train_std, 5, stride)
 X_valid_std = vectorize_windows(X_valid_std, 5, stride)
 X_test_std = vectorize_windows(X_test_std, 5, stride)
 
-# create datasets
-train_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
-valid_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
-test_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
+# remove final row (no label for it)
+X_train_std = X_train_std[:-1]
+X_valid_std = X_valid_std[:-1]
+X_test_std = X_test_std[:-1]
 
-num_input_parameters = X_train_std.shape[1]
+# create datasets
+train_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
+valid_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
+test_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train_std))
+
 
 # create model
+num_input_parameters = X_train_std.shape[1]
 model = keras.Sequential([
-    keras.layers.Dense(1024, activation='relu', input_shape=(num_input_parameters)),
+    keras.layers.Dense(1024, activation='relu', input_shape=(num_input_parameters, )),
     keras.layers.Dropout(rate=0.5),
     keras.layers.Dense(1, activation='linear')
 ])
