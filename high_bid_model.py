@@ -71,11 +71,13 @@ train_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
 valid_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
 test_ds = tf.data.Dataset.from_tensor_slices(X_train_std, y_train_std)
 
+num_input_parameters = X_train_std.shape[1]
+
 # create model
 model = keras.Sequential([
-    keras.layers.Dense(1024, activation='relu'),
+    keras.layers.Dense(1024, activation='relu', input_shape=(num_input_parameters)),
     keras.layers.Dropout(rate=0.5),
-    keras.layers.Dense(1, activation='sigmoid')
+    keras.layers.Dense(1, activation='linear')
 ])
 
 model.compile(optimizer='adam', loss='mse', metrics=['mse'])
