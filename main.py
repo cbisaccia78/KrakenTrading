@@ -1,6 +1,8 @@
 import websocket
 import json
 import datetime
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor
 
 from api import get_all_wsnames
 from high_bid_model import create_model
@@ -12,6 +14,11 @@ PING = {
 
 PUBLIC_URL = "wss://ws.kraken.com/"
 PRIVATE_URL = "wss://ws-auth.kraken.com/"
+
+model = None
+
+def model_trainer():
+    pass
 
 with open('./ticker-1-test', 'a') as ticker_fp:
 
@@ -48,9 +55,6 @@ with open('./ticker-1-test', 'a') as ticker_fp:
 
     NUM_EXAMPLES = 4459
 
-    # Create a WebSocket connection
-    ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
-
     """
     Need a separate thread of execution here which, upon reaching NUM_EXAMPLES messages, will create a model from these examples.
     As the model is being created, more data will be streaming in. Call this extra data X_extra. 
@@ -64,6 +68,13 @@ with open('./ticker-1-test', 'a') as ticker_fp:
     should tell the model thread to train a new model with more recent data. This implies that data that we run predictions on should
     be stored for future model training. 
     """
+
+    mp_context = multiprocessing.get_context("fork")
+    with ProcessPoolExecutor(mp_context=mp_context) as executor:
+        pass
+
+    # Create a WebSocket connection
+    ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
 
     # Start the WebSocket connection (runs in a separate thread)
     ws.run_forever() # this hangs until websocket is stopped
