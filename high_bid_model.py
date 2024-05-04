@@ -19,9 +19,8 @@ FEATURE_MAP = {
     'open_price_today': 18, 'open_price_last_24': 19
 }
 
-def create_model(ticker_stream_path, pair_name, window_len=5, stride=1):
+def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
-    raw_ticker_stream = get_ticker_stream(ticker_stream_path)
     ticker_stream, all_pairs_sorted = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
 
     btc_index = all_pairs_sorted.index(pair_name)
