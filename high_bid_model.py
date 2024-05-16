@@ -4,7 +4,6 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from keras.callbacks import EarlyStopping
 
-from database import get_ticker_stream
 from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_windows
 
 FEATURE_MAP = {
@@ -23,7 +22,7 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     ticker_stream, all_pairs_sorted = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
 
-    btc_index = all_pairs_sorted.index(pair_name)
+    pair_index = all_pairs_sorted.index(pair_name)
     features_per_pair = 20
 
     # create evenly spaced samples over time (not implemented yet)
@@ -53,11 +52,11 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     # create labels
     bid_index = FEATURE_MAP['best_bid']
-    btc_bid_index = btc_index*features_per_pair + bid_index
+    pair_bid_index = pair_index*features_per_pair + bid_index
 
-    y_train_std = X_train_std[window_len:, btc_bid_index]
-    y_valid_std = X_valid_std[window_len:, btc_bid_index]
-    y_test_std = X_test_std[window_len:, btc_bid_index]
+    y_train_std = X_train_std[window_len:, pair_bid_index]
+    y_valid_std = X_valid_std[window_len:, pair_bid_index]
+    y_test_std = X_test_std[window_len:, pair_bid_index]
 
     # create windows
     X_train_std = vectorize_windows(X_train_std, window_len, stride)
@@ -91,11 +90,11 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
     early_stopping_callback = EarlyStopping(monitor='val_mse', patience=20, restore_best_weights=True)
 
     # fit training data
-    history = model.fit(train_ds, epochs=250, validation_data=valid_ds, callbacks=[early_stopping_callback])
+    _ = model.fit(train_ds, epochs=250, validation_data=valid_ds, callbacks=[early_stopping_callback])
 
     # evaluate test data
-    test_loss, test_mse = model.evaluate(test_ds)
+    _, test_mse = model.evaluate(test_ds)
 
     print('test_mse : {}'.format(test_mse))
 
-    return model
+    return model, test_mse, scalar
