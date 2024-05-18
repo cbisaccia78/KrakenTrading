@@ -20,15 +20,15 @@ FEATURE_MAP = {
 
 def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
-    ticker_stream, all_pairs_sorted = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
+    ticker_stream, pair_cache = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
 
-    pair_index = all_pairs_sorted.index(pair_name)
-    features_per_pair = 20
+    pair_index = list(pair_cache.keys()).index(pair_name)
+    features_per_pair = len(FEATURE_MAP)
 
-    # create evenly spaced samples over time (not implemented yet)
-
+    # convert to numpy array
     X = np.array(ticker_stream, dtype=np.float32)
 
+    # numeric timestamps
     X[:, 0] = timestamp_to_percent(X[:, 0])
 
     # train test validation split
@@ -97,4 +97,4 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     print('test_mse : {}'.format(test_mse))
 
-    return model, test_mse, scalar
+    return model, test_mse, scalar, pair_cache
