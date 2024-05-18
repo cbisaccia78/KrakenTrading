@@ -2,11 +2,12 @@ import websocket
 import json
 import datetime
 import threading
-import time
+
+import numpy as np
 
 from api import get_all_wsnames
-from high_bid_model import create_model
-from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_windows
+from high_bid_model import create_model, FEATURE_MAP
+from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_windows
 
 PING = {
     "event": "ping",
@@ -18,9 +19,13 @@ PRIVATE_URL = "wss://ws-auth.kraken.com/"
 
 ACCEPTED_ERROR = 0.01
 
+features_per_pair = len(FEATURE_MAP)
+pair_name = 'XBT/USD'
+
+window_length = 5
+
 model = None
 model_thread = None
-trading_thread = None
 retrain = False
 
 raw_ticker_stream = []
@@ -31,30 +36,41 @@ count = 0
 NUM_EXAMPLES = 4459
 
 def model_thread_func():
+    # TODO - need to keep the pair cache up to data even if we aren't updating model
+
     global model
-    global trading_thread
     global raw_ticker_stream
     global count
     global retrain
+    global errors
 
     if model is None:
-        if count >= NUM_EXAMPLES:
-            model = create_model(raw_ticker_stream, 'XBT/USD')
-            trading_thread = threading.Thread(target=trading_thread_func)
-    else:
-        if retrain:
-            count = 0
-            model = None
+            if count >= NUM_EXAMPLES:
+                model, test_mse, standard_scalar, pair_cache = create_model(raw_ticker_stream, pair_name, window_len=window_length)
+    elif retrain:
+        count = 0
+        model = None
+    else: # we can trade
+        # grab the most recent window_length examples
+        recent_examples = raw_ticker_stream[count-5:]
+        recent_tickers = vectorize_from_cache(pair_cache, recent_examples)
+        
+        #convert to numpy array
+        x = np.array(recent_tickers, dtype=np.float32)
+        x[:, 0] = timestamp_to_percent(x[:, 0])
 
-    time.sleep(1)
+        # standardize using same mean/std from creation of model
+        x = standard_scalar.transform(x)
 
-def trading_thread_func():
-    global retrain
-    global model
-    model.predict()
-    pass
+        x = vectorize_windows(x, window_length)
 
+        # Reshape the example to add a batch dimension
+        x = np.reshape(x, (1,) + x.shape)
 
+        prediction = model(x)
+
+        print(prediction)
+    
 # Function to handle incoming messages
 def on_message(ws, message):
     global count
@@ -88,7 +104,6 @@ def on_close(ws):
     print("WebSocket connection closed")
     # join threads
     model_thread.join()
-    trading_thread.join()
 
 """
 Need separate threads of execution here which, upon reaching NUM_EXAMPLES messages, will create a model from these examples.
@@ -105,6 +120,8 @@ be stored for future model training.
 """
 
 model_thread = threading.Thread(target=model_thread_func)
+
+model_thread.start()
 
 # Create a WebSocket connection
 ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
