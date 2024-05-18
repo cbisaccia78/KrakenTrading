@@ -44,12 +44,16 @@ def populate_ticker_cache(raw_ticker_stream, all_pairs, cache):
         if not all_pairs.difference(pairs_so_far):
             break
 
-def vectorize_from_cache(vectorized_tickers, cache, all_pairs, raw_ticker_stream):
+def vectorize_from_cache(cache, raw_ticker_stream):
     """
     for each new ticker, update the cache
     with this new value and then vectorize all of the tickers using the 
     cached values for each ticker. 
     """
+    vectorized_tickers = []
+
+    pair_names = cache.keys()
+
     for item in raw_ticker_stream:
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
@@ -60,10 +64,12 @@ def vectorize_from_cache(vectorized_tickers, cache, all_pairs, raw_ticker_stream
 
         timestamp = datetime.datetime.fromisoformat(time_received).timestamp()
         vectorized_data = [timestamp]
-        for pair in all_pairs:
+        for pair in pair_names:
             flattened_data = cache[pair]
             vectorized_data.extend(flattened_data)
         vectorized_tickers.append(vectorized_data)
+    
+    return vectorized_tickers
 
 def vectorize_ticker_stream(raw_ticker_stream=[]):
     """
@@ -88,7 +94,7 @@ def vectorize_ticker_stream(raw_ticker_stream=[]):
     # populate the cache with the most recent value of each pair, breaking once 
     # each pair has been encountered once
     pairs_so_far = set()
-    last_known_pair_info = {}
+    pair_cache = {}
     for i, item in enumerate(raw_ticker_stream):
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
@@ -97,20 +103,19 @@ def vectorize_ticker_stream(raw_ticker_stream=[]):
         data = item[time_received]['data']
         values = data.values()
         flattened_data = flatten_lists(values)
-        last_known_pair_info[pair] = flattened_data
+        pair_cache[pair] = flattened_data
 
         if not all_pairs.difference(pairs_so_far):
             break
 
-    all_pairs = sorted(all_pairs) # enforce ordering of data
+    pair_cache = dict(sorted(pair_cache.items())) # enforce ordering of data
 
 
     # by this point last_known_pair_info has every pair populated.
     # now for each new example vectorize it using the cache
-    vectorized_tickers = []
-    vectorize_from_cache(vectorized_tickers, last_known_pair_info, all_pairs, raw_ticker_stream[i:])
+    vectorized_tickers = vectorize_from_cache(pair_cache, raw_ticker_stream[i:])
     
-    return vectorized_tickers, all_pairs, last_known_pair_info
+    return vectorized_tickers, pair_cache
 
 def equal_time_spacing(X, t_space=0):
     """
