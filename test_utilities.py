@@ -85,4 +85,8 @@ ticker = [
     }
 ]
 
-print(utils.vectorize_ticker_stream(ticker))
+vectorized = utils.vectorize_ticker_stream(ticker)[0]
+print(len(vectorized))
+print(vectorized[0])
+print(vectorized[1])
+print(vectorized[2])
