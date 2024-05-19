@@ -1,0 +1,2 @@
+win_size = 6 examples = 10000 test mse = 1.399 - epochs = 35
+win_size = 10 examples = 2000 test mse = 120104072.0 - epochs = 131
