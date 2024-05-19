@@ -7,14 +7,10 @@ import numpy as np
 
 from api import get_all_wsnames
 from high_bid_model import create_model, FEATURE_MAP
-from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_windows
+from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_windows, update_pair_cache
 
-PING = {
-    "event": "ping",
-    "reqid": 69420
-}
-
-PUBLIC_URL = "wss://ws.kraken.com/"
+# TODO - move these to api module
+PUBLIC_URL = "wss://ws.kraken.com/" 
 PRIVATE_URL = "wss://ws-auth.kraken.com/"
 
 ACCEPTED_ERROR = 0.01
@@ -26,37 +22,54 @@ window_length = 5
 
 model = None
 model_thread = None
+
 retrain = False
 
 raw_ticker_stream = []
+pair_cache = {}
+
 errors = []
 
-count = 0
+examples_processed = 0
+examples_received = 0
 
 NUM_EXAMPLES = 4459
 
 def model_thread_func():
-    # TODO - need to keep the pair cache up to data even if we aren't updating model
 
     global model
     global raw_ticker_stream
-    global count
+    global pair_cache
+    global examples_processed
+    global examples_received
     global retrain
     global errors
 
-    if model is None:
-            if count >= NUM_EXAMPLES:
+    if model is None: # need to create model
+            if examples_received >= NUM_EXAMPLES: 
                 model, test_mse, standard_scalar, pair_cache = create_model(raw_ticker_stream, pair_name, window_len=window_length)
-    elif retrain:
-        count = 0
+                examples_processed = NUM_EXAMPLES
+    
+    elif retrain: # model is not performing well
+        examples_received = 0
+        examples_processed = 0
         model = None
+
     else: # we can trade
+
+        # update the pair cache for all examples that came in while model was trading / sleeping,
+        # UNLESS those examples will be apart of the window_length
+        last_uncached_index = examples_received - window_length
+        if last_uncached_index - examples_processed > 0:
+            update_pair_cache(raw_ticker_stream[examples_processed:last_uncached_index], pair_cache)
+
         # grab the most recent window_length examples
-        recent_examples = raw_ticker_stream[count-5:]
-        recent_tickers = vectorize_from_cache(pair_cache, recent_examples)
+        recent_examples = raw_ticker_stream[last_uncached_index:]
+        # vectorize examples from the cache
+        recent_examples = vectorize_from_cache(pair_cache, recent_examples) # this call will also update pair cache with recent examples
         
         #convert to numpy array
-        x = np.array(recent_tickers, dtype=np.float32)
+        x = np.array(recent_examples, dtype=np.float32)
         x[:, 0] = timestamp_to_percent(x[:, 0])
 
         # standardize using same mean/std from creation of model
@@ -73,7 +86,7 @@ def model_thread_func():
     
 # Function to handle incoming messages
 def on_message(ws, message):
-    global count
+    global examples_received
     global raw_ticker_stream
     # Parse the incoming message (assuming it's JSON)
     result = json.loads(message)
@@ -82,7 +95,7 @@ def on_message(ws, message):
     pair = result[3]
     now = str(datetime.datetime.now())
     raw_ticker_stream.append({now: {'pair': pair, 'data': data}})
-    count = count + 1
+    examples_received = examples_received + 1
 
 # Function to handle WebSocket open event
 def on_open(ws):

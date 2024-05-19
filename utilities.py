@@ -7,6 +7,11 @@ import numpy as np
 
 SECONDS_IN_DAY = 24*60*60
 
+PING = {
+    "event": "ping",
+    "reqid": 69420
+}
+
 def get_result(url):
     try:
         response = requests.get(url)
@@ -28,21 +33,16 @@ def get_result(url):
 def flatten_lists(list_of_lists):
     return functools.reduce(lambda x,y: x+y, list_of_lists)
 
-def populate_ticker_cache(raw_ticker_stream, all_pairs, cache):
+def update_pair_cache(raw_ticker_stream, cache):
     # populate the cache with the most recent value of each pair
-    pairs_so_far = set()
-    for i, item in enumerate(raw_ticker_stream):
+    for item in raw_ticker_stream:
         time_received = list(item.keys())[0]
         pair = item[time_received]['pair']
-        pairs_so_far.add(pair)
 
         data = item[time_received]['data']
         values = data.values()
         flattened_data = flatten_lists(values)
         cache[pair] = flattened_data
-
-        if not all_pairs.difference(pairs_so_far):
-            break
 
 def vectorize_from_cache(cache, raw_ticker_stream):
     """
