@@ -3,6 +3,7 @@ import json
 import datetime
 import threading
 import signal
+import time
 
 import numpy as np
 
@@ -103,6 +104,10 @@ def model_thread_func():
 
             examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
     print('done')
+
+model_thread = threading.Thread(target=model_thread_func)
+model_thread.start()
+
 # Function to handle incoming messages
 def on_message(ws, message):
     global examples_received
@@ -134,24 +139,35 @@ def on_open(ws):
 
 # Function to handle WebSocket close event
 def on_close(ws):
+    print("Closed websocket")
+
+def ws_thread_func():
+    # Create a WebSocket connection
+    ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
+
+    # Start the WebSocket connection (runs in a separate thread)
+    ws.run_forever() # this hangs until websocket is stopped
+    ws.close()
+    print('done ws_thread')
+    
+
+ws_thread = threading.Thread(target=ws_thread_func)
+ws_thread.start()
+
+def signal_handle_func(sig, frame):
+    global ws_thread
     global model_thread
     global model_thread_stop
-    print("WebSocket connection closed")
-    # join threads
+    print('Interrupt main')
+    # Close websocket gracefully
+    ws_thread.join()
+    print('joined ws_thread')
     model_thread_stop = True
     model_thread.join()
 
-signal.signal(signal.SIGINT, )
+signal.signal(signal.SIGINT, signal_handle_func)
 
-model_thread = threading.Thread(target=model_thread_func)
+while True:
+    time.sleep(1)
+    
 
-model_thread.start()
-
-# Create a WebSocket connection
-ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
-
-# Start the WebSocket connection (runs in a separate thread)
-ws.run_forever() # this hangs until websocket is stopped
-
-# Close websocket gracefully
-ws.close()
