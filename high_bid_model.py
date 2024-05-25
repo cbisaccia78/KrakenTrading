@@ -4,7 +4,7 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from keras.callbacks import EarlyStopping
 
-from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_windows
+from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window
 
 FEATURE_MAP = {
     'best_ask': 0, 'ask_whole_lot_volume': 1, 'ask_lot_volume': 2,
@@ -59,9 +59,9 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
     y_test_std = X_test_std[window_len:, pair_bid_index]
 
     # create windows
-    X_train_std = vectorize_windows(X_train_std, window_len, stride)
-    X_valid_std = vectorize_windows(X_valid_std, window_len, stride)
-    X_test_std = vectorize_windows(X_test_std, window_len, stride)
+    X_train_std = vectorize_window(X_train_std, window_len, stride)
+    X_valid_std = vectorize_window(X_valid_std, window_len, stride)
+    X_test_std = vectorize_window(X_test_std, window_len, stride)
 
     # remove final row (no label for it)
     X_train_std = X_train_std[:-1]

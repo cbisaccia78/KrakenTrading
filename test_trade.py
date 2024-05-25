@@ -1,6 +1,6 @@
 import numpy as np
 
-from utilities import timestamp_to_percent, vectorize_windows, vectorize_from_cache, update_pair_cache
+from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache
 from test_utilities import ticker
 
 
@@ -30,4 +30,4 @@ recent_examples = vectorize_from_cache(pair_cache, recent_examples) # this call 
 x = np.array(recent_examples, dtype=np.float32)
 x[:, 0] = timestamp_to_percent(x[:, 0])
 
-x = vectorize_windows(x, window_length)
+x = vectorize_window(x, window_length)

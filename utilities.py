@@ -158,7 +158,7 @@ def equal_time_spacing(X, t_space=0):
         # if the next t falls in between t+1 and t+2, just append t_1 as filler
         # if t increment overshot t+1, use t+2? (Can this happen?)
 
-def vectorize_windows(X, window_length, stride=1, drop_extras=True):
+def vectorize_window(X, window_length, stride=1, drop_extras=True):
     num_examples = X.shape[0]
     
     X_ret = []

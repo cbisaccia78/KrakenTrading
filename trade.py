@@ -7,7 +7,7 @@ import numpy as np
 
 from api import get_all_wsnames
 from high_bid_model import create_model, FEATURE_MAP
-from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_windows, update_pair_cache
+from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_window, update_pair_cache
 
 # TODO - move these to api module
 PUBLIC_URL = "wss://ws.kraken.com/" 
@@ -64,18 +64,18 @@ def model_thread_func():
             update_pair_cache(raw_ticker_stream[examples_processed:last_uncached_index], pair_cache)
 
         # grab the most recent window_length examples
-        recent_examples = raw_ticker_stream[last_uncached_index:]
+        example_window = raw_ticker_stream[last_uncached_index:]
         # vectorize examples from the cache
-        recent_examples = vectorize_from_cache(pair_cache, recent_examples) # this call will also update pair cache with recent examples
+        example_window = vectorize_from_cache(pair_cache, example_window) # this call will also update pair cache with recent examples
         
         #convert to numpy array
-        x = np.array(recent_examples, dtype=np.float32)
+        x = np.array(example_window, dtype=np.float32)
         x[:, 0] = timestamp_to_percent(x[:, 0])
 
         # standardize using same mean/std from creation of model
         x = standard_scalar.transform(x)
 
-        x = vectorize_windows(x, window_length)
+        x = vectorize_window(x, window_length)
 
         # Reshape the example to add a batch dimension
         x = np.reshape(x, (1,) + x.shape)
