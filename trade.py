@@ -4,6 +4,7 @@ import datetime
 import threading
 import signal
 import time
+import sys
 
 import numpy as np
 
@@ -61,12 +62,33 @@ def model_thread_func():
     global examples_received
     global retrain
     global errors
-
+    
     while not model_thread_stop:
+
         if model is None: # need to create model
                 if examples_received >= NUM_EXAMPLES:
-                    print('>')
+                    #create model
                     model, test_mse, standard_scalar, pair_cache = create_model(raw_ticker_stream, pair_name, window_len=window_length)
+                    
+                    # save index of pair bid to predict
+                    pair_index = list(pair_cache.keys()).index(pair_name)
+                    features_per_pair = len(FEATURE_MAP)
+                    bid_index = FEATURE_MAP['best_bid']
+                    pair_bid_index = pair_index*features_per_pair + bid_index
+
+                    # save mean/std of pair bid to predict
+
+                    mean = standard_scalar.mean_[pair_bid_index]
+                    std = standard_scalar.scale_[pair_bid_index]
+                    print('mean xbt: ', mean)
+                    print('std: xbt', std)
+
+                    # print(raw_ticker_stream[pair_index])
+                    # x, _ = vectorize_ticker_stream(raw_ticker_stream)
+                    # x = np.array(x)
+                    # print(x[:, pair_bid_index])
+
+                    #updated examples_processed
                     examples_processed = NUM_EXAMPLES
         
         elif retrain: # model is not performing well
@@ -100,10 +122,16 @@ def model_thread_func():
             # Reshape the example to add a batch dimension
             x = np.reshape(x, (1,) + x.shape)
 
-            prediction = model(x)
-
+            prediction = model(x) # tensor of shape (1,1,1)
+            # need to un-standardize this value to get the actual value to trade
+            value = prediction[0].numpy()
+            #print('----------------')
+            #print('standardized: ', value)
+            value = (value - mean) / std
+            #print('unstandardized: ', value)
+            #print('----------------\n')
             examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
-    print('done')
+
 
 model_thread = threading.Thread(target=model_thread_func)
 model_thread.start()
@@ -141,14 +169,14 @@ def on_open(ws):
 def on_close(ws):
     print("Closed websocket")
 
-def ws_thread_func():
-    # Create a WebSocket connection
-    ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
+ws = websocket.WebSocketApp("wss://ws.kraken.com/", on_message=on_message, on_open=on_open, on_close=on_close)
 
+def ws_thread_func():
+    global ws
+    # Create a WebSocket connection
     # Start the WebSocket connection (runs in a separate thread)
     ws.run_forever() # this hangs until websocket is stopped
-    ws.close()
-    print('done ws_thread')
+
     
 
 ws_thread = threading.Thread(target=ws_thread_func)
@@ -158,12 +186,15 @@ def signal_handle_func(sig, frame):
     global ws_thread
     global model_thread
     global model_thread_stop
-    print('Interrupt main')
+    global ws
+
     # Close websocket gracefully
+    ws.close()
     ws_thread.join()
-    print('joined ws_thread')
+
     model_thread_stop = True
     model_thread.join()
+    sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handle_func)
 
