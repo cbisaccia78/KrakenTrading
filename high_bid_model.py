@@ -52,7 +52,7 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     # create labels
     bid_index = FEATURE_MAP['best_bid']
-    pair_bid_index = pair_index*features_per_pair + bid_index
+    pair_bid_index = 1 + pair_index*features_per_pair + bid_index # add 1 because of timestamp
 
     y_train_std = X_train_std[window_len:, pair_bid_index]
     y_valid_std = X_valid_std[window_len:, pair_bid_index]

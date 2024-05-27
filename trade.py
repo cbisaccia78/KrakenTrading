@@ -37,7 +37,7 @@ errors = []
 examples_processed = 0
 examples_received = 0
 
-NUM_EXAMPLES = 700 # 4459
+NUM_EXAMPLES = 4459
 
 def model_thread_func():
     """
@@ -74,7 +74,8 @@ def model_thread_func():
                     pair_index = list(pair_cache.keys()).index(pair_name)
                     features_per_pair = len(FEATURE_MAP)
                     bid_index = FEATURE_MAP['best_bid']
-                    pair_bid_index = pair_index*features_per_pair + bid_index
+                    offset_index = pair_index*features_per_pair + 1 # +1 because of time index
+                    pair_bid_index = offset_index + bid_index
 
                     # save mean/std of pair bid to predict
 
@@ -82,11 +83,6 @@ def model_thread_func():
                     std = standard_scalar.scale_[pair_bid_index]
                     print('mean xbt: ', mean)
                     print('std: xbt', std)
-
-                    # print(raw_ticker_stream[pair_index])
-                    # x, _ = vectorize_ticker_stream(raw_ticker_stream)
-                    # x = np.array(x)
-                    # print(x[:, pair_bid_index])
 
                     #updated examples_processed
                     examples_processed = NUM_EXAMPLES
@@ -125,11 +121,11 @@ def model_thread_func():
             prediction = model(x) # tensor of shape (1,1,1)
             # need to un-standardize this value to get the actual value to trade
             value = prediction[0].numpy()
-            #print('----------------')
-            #print('standardized: ', value)
+            print('----------------')
+            print('standardized: ', value)
             value = (value - mean) / std
-            #print('unstandardized: ', value)
-            #print('----------------\n')
+            print('unstandardized: ', value)
+            print('----------------\n')
             examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
 
 

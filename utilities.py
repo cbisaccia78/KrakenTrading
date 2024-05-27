@@ -107,9 +107,8 @@ def vectorize_ticker_stream(raw_ticker_stream=[]):
 
         if not all_pairs.difference(pairs_so_far):
             break
-
+    
     pair_cache = dict(sorted(pair_cache.items())) # enforce ordering of data
-
     # by this point last_known_pair_info has every pair populated.
     # now for each new example vectorize it using the cache
     vectorized_tickers = vectorize_from_cache(pair_cache, raw_ticker_stream[i:])
