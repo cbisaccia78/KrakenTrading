@@ -87,7 +87,7 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     model.compile(optimizer='adam', loss='mse', metrics=['mse'])
 
-    early_stopping_callback = EarlyStopping(monitor='val_mse', patience=20, restore_best_weights=True)
+    early_stopping_callback = EarlyStopping(monitor='val_mse', patience=5, restore_best_weights=True)
 
     # fit training data
     _ = model.fit(train_ds, epochs=250, validation_data=valid_ds, callbacks=[early_stopping_callback])
