@@ -122,9 +122,8 @@ def model_thread_func():
             # need to un-standardize this value to get the actual value to trade
             value = prediction[0].numpy()
             print('----------------')
-            print('standardized: ', value)
-            value = (value - mean) / std
-            print('unstandardized: ', value)
+            value = (value*std) + mean
+            print('predicted: ', value)
             print('----------------\n')
             examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
 
@@ -177,6 +176,8 @@ def ws_thread_func():
 
 ws_thread = threading.Thread(target=ws_thread_func)
 ws_thread.start()
+
+
 
 def signal_handle_func(sig, frame):
     global ws_thread
