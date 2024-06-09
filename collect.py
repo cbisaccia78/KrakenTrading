@@ -7,10 +7,13 @@ from api import get_all_wsnames
 PUBLIC_URL = "wss://ws.kraken.com/"
 PRIVATE_URL = "wss://ws-auth.kraken.com/"
 
-with open('./ticker-1-test', 'a') as ticker_fp:
+count = 0
+
+with open('./ticker-2-model', 'a') as ticker_fp:
 
     # Function to handle incoming messages
     def on_message(ws, message):
+        global count
         # Parse the incoming message (assuming it's JSON)
         result = json.loads(message)
         # Process the data as needed
@@ -18,6 +21,8 @@ with open('./ticker-1-test', 'a') as ticker_fp:
         pair = result[3]
         now = str(datetime.datetime.now())
         ticker_fp.write(json.dumps({now: {'pair': pair, 'data': data}}) + '\n')
+        count = count + 1
+        print(count)
 
     # Function to handle WebSocket open event
     def on_open(ws):
