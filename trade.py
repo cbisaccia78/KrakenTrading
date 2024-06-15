@@ -94,15 +94,17 @@ def model_thread_func():
 
         else: # we can trade
 
-            # update the pair cache for all examples that came in while model was trading / sleeping,
-            # UNLESS those examples will be apart of the window_length
             _examples_received = examples_received # just in case this thread gets put to sleep and examples received changes, we don't want to get out of sync
-            last_uncached_index = _examples_received - window_length
-            if last_uncached_index - examples_processed > 0:
-                update_pair_cache(raw_ticker_stream[examples_processed:last_uncached_index], pair_cache)
+            
+            # update the pair cache for all examples that came in while model was trading / sleeping,
+            # which will not be apart of the window
+            last_missed_example_index = _examples_received - window_length
+            num_missed_examples = last_missed_example_index - examples_processed
+            if num_missed_examples > 0:
+                update_pair_cache(raw_ticker_stream[examples_processed:last_missed_example_index], pair_cache)
 
             # grab the most recent window_length examples
-            example_window = raw_ticker_stream[last_uncached_index:]
+            example_window = raw_ticker_stream[last_missed_example_index:]
             # vectorize examples from the cache
             example_window = vectorize_from_cache(pair_cache, example_window) # this call will also update pair cache with recent examples
             
@@ -113,6 +115,7 @@ def model_thread_func():
             # standardize using same mean/std from creation of model
             x = standard_scalar.transform(x)
 
+            # concatenate each example from the example window into one large vector
             x = vectorize_window(x, window_length)
 
             # Reshape the example to add a batch dimension

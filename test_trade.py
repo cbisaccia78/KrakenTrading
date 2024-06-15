@@ -13,7 +13,7 @@ pair_name = 'XBT/USD'
 examples_processed = 0
 examples_received = 0
 
-NUM_EXAMPLES = 4459
+NUM_EXAMPLES = 800#4459
 
 total_raw_ticker_stream = get_ticker_stream('ticker-2-model')
 raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
@@ -37,6 +37,7 @@ print('std: xbt', std)
 
 #updated examples_processed
 examples_processed = NUM_EXAMPLES
+examples_received = NUM_EXAMPLES
 
 
 for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
@@ -44,15 +45,18 @@ for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
     raw_ticker_stream.append(total_raw_ticker_stream[i])
     examples_received = examples_received + 1
 
-    # update the pair cache for all examples that came in while model was trading / sleeping,
-    # UNLESS those examples will be apart of the window_length
+    
     _examples_received = examples_received # just in case this thread gets put to sleep and examples received changes, we don't want to get out of sync
-    last_uncached_index = _examples_received - window_length
-    if last_uncached_index - examples_processed > 0:
-        update_pair_cache(raw_ticker_stream[examples_processed:last_uncached_index], pair_cache)
+    
+    # update the pair cache for all examples that came in while model was trading / sleeping,
+    # which will not be apart of the window
+    last_missed_example_index = _examples_received - window_length
+    num_missed_examples = last_missed_example_index - examples_processed
+    if num_missed_examples > 0:
+        update_pair_cache(raw_ticker_stream[examples_processed:last_missed_example_index], pair_cache)
 
     # grab the most recent window_length examples
-    example_window = raw_ticker_stream[last_uncached_index:]
+    example_window = raw_ticker_stream[last_missed_example_index:]
     # vectorize examples from the cache
     example_window = vectorize_from_cache(pair_cache, example_window) # this call will also update pair cache with recent examples
 
@@ -63,17 +67,18 @@ for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
     # standardize using same mean/std from creation of model
     x = standard_scalar.transform(x)
 
+    # concatenate each example from the example window into one large vector
     x = vectorize_window(x, window_length)
 
     # Reshape the example to add a batch dimension
-    x = np.reshape(x, (1,) + x.shape)
-
+    x = np.array([x])#np.reshape(x, (1,) + x.shape)
+    print(x)
     prediction = model(x) # tensor of shape (1,1,1)
     # need to un-standardize this value to get the actual value to trade
     value = prediction[0].numpy()
     print('----------------')
     print('standardized: ', value)
-    value = (value - mean) / std
+    value = (value*std) + mean
     print('unstandardized: ', value)
     print('----------------\n')
     examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
