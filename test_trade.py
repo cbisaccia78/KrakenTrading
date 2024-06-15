@@ -13,7 +13,7 @@ pair_name = 'XBT/USD'
 examples_processed = 0
 examples_received = 0
 
-NUM_EXAMPLES = 800#4459
+NUM_EXAMPLES = 4459
 
 total_raw_ticker_stream = get_ticker_stream('ticker-2-model')
 raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
@@ -38,6 +38,9 @@ print('std: xbt', std)
 #updated examples_processed
 examples_processed = NUM_EXAMPLES
 examples_received = NUM_EXAMPLES
+
+last_prediction = None
+errors = []
 
 
 for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
@@ -72,13 +75,30 @@ for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
 
     # Reshape the example to add a batch dimension
     x = np.array([x])#np.reshape(x, (1,) + x.shape)
-    print(x)
+
+    # get model prediction
     prediction = model(x) # tensor of shape (1,1,1)
+    
     # need to un-standardize this value to get the actual value to trade
     value = prediction[0].numpy()
-    print('----------------')
-    print('standardized: ', value)
     value = (value*std) + mean
-    print('unstandardized: ', value)
-    print('----------------\n')
+    value = value.item()
+    """print('----------------')
+    print(f'{pair_name} at next ticker update: ', value)
+    print('----------------\n')"""
+
+    # TODO - this monitoring of the model should happen on a different thread?
+    # grab the last predicted value and compare it to the current ticker value
+    if last_prediction is not None:
+        # calculate error from previous prediction with current bid price
+        current_pair_bid = pair_cache[pair_name][bid_index]
+        errors.append(float(current_pair_bid) - last_prediction) # positive == underestimated
+        print('----------------')
+        print(f'predicted: {last_prediction}')
+        print(f'actual: {current_pair_bid}')
+        print(f'mean error: {np.mean(np.array(errors))}')
+        print('----------------\n')
+    last_prediction = value
+
+    # update examples processed
     examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping

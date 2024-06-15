@@ -32,6 +32,7 @@ retrain = False
 raw_ticker_stream = []
 pair_cache = {}
 
+last_prediction = None
 errors = []
 
 examples_processed = 0
@@ -62,6 +63,7 @@ def model_thread_func():
     global examples_received
     global retrain
     global errors
+    global last_prediction
     
     while not model_thread_stop:
 
@@ -121,13 +123,30 @@ def model_thread_func():
             # Reshape the example to add a batch dimension
             x = np.array([x])
 
+            # get model prediction
             prediction = model(x) # tensor of shape (1,1,1)
             # need to un-standardize this value to get the actual value to trade
+            
             value = prediction[0].numpy()
-            print('----------------')
             value = (value*std) + mean
-            print('predicted: ', value)
-            print('----------------\n')
+            value = value.item()
+            """print('----------------')
+            print(f'{pair_name} at next ticker update: ', value)
+            print('----------------\n')"""
+
+            # TODO - this monitoring of the model should happen on a different thread?
+            # grab the last predicted value and compare it to the current ticker value
+            if last_prediction is not None:
+                # calculate error from previous prediction with current bid price
+                current_pair_bid = pair_cache[pair_name][bid_index]
+                errors.append(float(current_pair_bid) - last_prediction) # positive == underestimated
+                print('----------------')
+                print(f'predicted: {last_prediction}')
+                print(f'actual: {current_pair_bid}')
+                print(f'mean error: {np.mean(np.array(errors))}')
+                print('----------------\n')
+            last_prediction = value
+
             examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping
 
 
