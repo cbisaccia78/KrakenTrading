@@ -119,7 +119,7 @@ def model_thread_func():
             x = vectorize_window(x, window_length)
 
             # Reshape the example to add a batch dimension
-            x = np.reshape(x, (1,) + x.shape)
+            x = np.array([x])
 
             prediction = model(x) # tensor of shape (1,1,1)
             # need to un-standardize this value to get the actual value to trade
