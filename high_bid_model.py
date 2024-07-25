@@ -4,19 +4,7 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from keras.callbacks import EarlyStopping
 
-from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window
-
-FEATURE_MAP = {
-    'best_ask': 0, 'ask_whole_lot_volume': 1, 'ask_lot_volume': 2,
-    'best_bid': 3, 'bid_whole_lot_volume': 4, 'bid_lot_volume': 5,
-    'close_price': 6, 'close_lot_volume': 7,
-    'value_today': 8, 'value_last_24': 9,
-    'vol_weight_avg_today': 10, 'vol_weight_avg_last_24': 11,
-    'num_trades_today': 12, 'num_trades_last_24': 13,
-    'low_price_today': 14, 'low_price_last_24': 15,
-    'high_price_today': 16, 'high_price_last_24': 17,
-    'open_price_today': 18, 'open_price_last_24': 19
-}
+from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window, FEATURE_MAP
 
 def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 

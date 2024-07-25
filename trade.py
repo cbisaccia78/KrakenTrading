@@ -9,8 +9,8 @@ import sys
 import numpy as np
 
 from api import get_all_wsnames
-from high_bid_model import create_model, FEATURE_MAP
-from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_window, update_pair_cache
+from high_bid_model import create_model
+from utilities import vectorize_from_cache, timestamp_to_percent, vectorize_window, update_pair_cache, FEATURE_MAP
 
 # TODO - move these to api module
 PUBLIC_URL = "wss://ws.kraken.com/" 

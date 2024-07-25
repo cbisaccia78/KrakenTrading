@@ -1,7 +1,7 @@
 import numpy as np
 
-from high_bid_model import create_model, FEATURE_MAP
-from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache
+from high_bid_model import create_model
+from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache, FEATURE_MAP
 from database import get_ticker_stream
 
 window_length = 5
@@ -15,7 +15,7 @@ examples_received = 0
 
 NUM_EXAMPLES = 4459
 
-total_raw_ticker_stream = get_ticker_stream('ticker-2-model')
+total_raw_ticker_stream = get_ticker_stream('/home/cole/Code/KrakenTrading/ticker-2-model')
 raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
 
 #create model
@@ -27,6 +27,7 @@ features_per_pair = len(FEATURE_MAP)
 bid_index = FEATURE_MAP['best_bid']
 offset_index = pair_index*features_per_pair + 1 # +1 because of time index
 pair_bid_index = offset_index + bid_index
+print(pair_bid_index)
 
 # save mean/std of pair bid to predict
 

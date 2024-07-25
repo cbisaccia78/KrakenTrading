@@ -5,12 +5,26 @@ import datetime
 import pandas as pd
 import numpy as np
 
+FEATURE_MAP = {
+    'best_ask': 0, 'ask_whole_lot_volume': 1, 'ask_lot_volume': 2,
+    'best_bid': 3, 'bid_whole_lot_volume': 4, 'bid_lot_volume': 5,
+    'close_price': 6, 'close_lot_volume': 7,
+    'value_today': 8, 'value_last_24': 9,
+    'vol_weight_avg_today': 10, 'vol_weight_avg_last_24': 11,
+    'num_trades_today': 12, 'num_trades_last_24': 13,
+    'low_price_today': 14, 'low_price_last_24': 15,
+    'high_price_today': 16, 'high_price_last_24': 17,
+    'open_price_today': 18, 'open_price_last_24': 19
+}
+
 SECONDS_IN_DAY = 24*60*60
 
 PING = {
     "event": "ping",
     "reqid": 69420
 }
+
+LARGEST_MODEL_SIZE = 4459
 
 def get_result(url):
     try:
@@ -179,3 +193,51 @@ def timestamp_to_percent(column):
     # put timestamp on interval [0, 1]
     percent_of_day_column = (column % SECONDS_IN_DAY) / SECONDS_IN_DAY
     return percent_of_day_column
+
+def top_correlated_features(X, y, num_to_keep=10):
+    # Calculate the absolute correlation coefficients between each feature and F
+    correlations = np.abs(np.corrcoef(X, y, rowvar=False)[-1, :-1])
+
+    # Get the indices of the features with the highest correlation coefficients
+    top_feature_indices = np.argsort(correlations)[-num_to_keep:]
+
+    top_feature_tuples = [(idx, correlations[idx]) for idx in top_feature_indices]
+
+    return top_feature_tuples
+
+def explore_correlated_features(raw_ticker_stream, target_pair, num_to_keep=10, stride=LARGEST_MODEL_SIZE):
+    num_examples = len(raw_ticker_stream)
+    i = 0
+    end = num_examples - stride
+
+    top_index_scores = {}
+
+    while i <= end:
+        ticker_stream, pair_cache = vectorize_ticker_stream(raw_ticker_stream[i:i+stride])
+
+        # get pair index
+        pair_index = list(pair_cache.keys()).index(target_pair)
+        features_per_pair = len(FEATURE_MAP)
+        bid_index = FEATURE_MAP['best_bid']
+        offset_index = pair_index*features_per_pair + 1 # +1 because of time index
+        target_index = offset_index + bid_index
+
+        # convert to numpy array
+        X = np.array(ticker_stream, dtype=np.float32)
+
+        # numeric timestamps
+        X[:, 0] = timestamp_to_percent(X[:, 0])
+
+        y = X[:, target_index]
+
+        top_feature_tuples = top_correlated_features(X, y, num_to_keep)
+
+        for idx, corrcoeff in top_feature_tuples:
+            if idx not in top_index_scores:
+                top_index_scores[idx] = 0.0
+            
+            top_index_scores[idx] = top_index_scores[idx] + corrcoeff
+
+        i = i + stride
+    
+    print(dict(sorted(top_index_scores.items(), key=lambda item: item[1], reverse=True)))
