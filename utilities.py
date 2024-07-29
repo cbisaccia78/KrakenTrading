@@ -17,6 +17,8 @@ FEATURE_MAP = {
     'open_price_today': 18, 'open_price_last_24': 19
 }
 
+FEATURES_PER_PAIR = len(FEATURE_MAP)
+
 SECONDS_IN_DAY = 24*60*60
 
 PING = {
@@ -241,3 +243,23 @@ def explore_correlated_features(raw_ticker_stream, target_pair, num_to_keep=10, 
         i = i + stride
     
     print(dict(sorted(top_index_scores.items(), key=lambda item: item[1], reverse=True)))
+
+def binary_transform(y, predicate):
+    """
+    For each y_i, set y_i = predicate(y_i)
+    """
+
+    result = np.where(predicate(y), 1.0, 0.0)
+    return result
+
+def create_regression_labels(X, window_length, feature_index):
+    return X[window_length:, feature_index]
+
+def create_classification_labels(X, window_length, feature_index):
+    y_iter = X[window_length-1:, feature_index] # minus 1 because we need previous value to determine if it changed
+    y_num_examples = y_iter.shape[0] - 1
+    y = np.zeros(y_num_examples)
+    for i in range(0, y_num_examples):
+        y[i] = 1.0 if y_iter[i+1] - y_iter[i] > 0 else 0.0
+    
+    return y

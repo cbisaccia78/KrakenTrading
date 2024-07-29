@@ -1,7 +1,7 @@
 import numpy as np
 
 from high_bid_model import create_model
-from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache, FEATURE_MAP
+from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache, FEATURE_MAP, create_regression_labels, create_classification_labels
 from database import get_ticker_stream
 
 window_length = 5
@@ -15,11 +15,14 @@ examples_received = 0
 
 NUM_EXAMPLES = 4459
 
-total_raw_ticker_stream = get_ticker_stream('/home/cole/Code/KrakenTrading/ticker-2-model')
+total_raw_ticker_stream = get_ticker_stream('/Users/dancing_ghosts/Code/WebApps/KrakenTrading/ticker-2-model')
 raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
 
 #create model
-model, test_mse, standard_scalar, pair_cache = create_model(raw_ticker_stream, pair_name, window_len=window_length)
+model, test_mse, standard_scalar, pair_cache = create_model(
+    raw_ticker_stream, pair_name, window_len=window_length, 
+    generate_y=create_classification_labels, output_activation='sigmoid',
+    loss='binary_crossentropy', metric='accuracy')
 
 # save index of pair bid to predict
 pair_index = list(pair_cache.keys()).index(pair_name)
