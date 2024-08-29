@@ -96,16 +96,21 @@ def test_vectorize_ticker_stream():
     print(vectorized[2])
 
 def test_top_correlated_features():
-    X = np.array([
+    """ X = np.array([
         [4,4,5,8],
         [4.1,4.2,-1,7.4],
         [3.85,3.9,-4,8.5]
+    ]) """
+    X = np.array([
+        [1,2,3],
+        [1,2,3],
+        [1,2,3]
     ])
     print(utils.top_correlated_features(X, X[:, 1], 2))
 
 def test_explore_correlated_features(raw_ticker_stream, target_index, num_to_keep, stride):
     utils.explore_correlated_features(raw_ticker_stream, target_index, num_to_keep, stride)
 
-raw_ticker_stream = get_ticker_stream('/home/cole/Code/KrakenTrading/ticker-2024-05-27')
-test_explore_correlated_features(raw_ticker_stream, 'XBT/USD', 10, utils.LARGEST_MODEL_SIZE)
-# test_top_correlated_features()
+""" raw_ticker_stream = get_ticker_stream('/home/cole/Code/KrakenTrading/ticker-2024-05-27')
+test_explore_correlated_features(raw_ticker_stream, 'XBT/USD', 10, utils.LARGEST_MODEL_SIZE) """
+test_top_correlated_features()

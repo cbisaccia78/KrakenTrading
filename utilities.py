@@ -195,8 +195,14 @@ def timestamp_to_percent(column):
     return percent_of_day_column
 
 def top_correlated_features(X, y, num_to_keep=10):
+
+    # Add a small noise to the data so variances aren't zero
+    epsilon = 1e-6
+    X_noisy = X + epsilon * np.random.randn(*X.shape)
+    y_noisy = y + epsilon * np.random.randn(*y.shape)
+
     # Calculate the absolute correlation coefficients between each feature and F
-    correlations = np.abs(np.corrcoef(X, y, rowvar=False)[-1, :-1])
+    correlations = np.abs(np.corrcoef(X_noisy, y_noisy, rowvar=False)[-1, :-1])
 
     # Get the indices of the features with the highest correlation coefficients
     top_feature_indices = np.argsort(correlations)[-num_to_keep:]
