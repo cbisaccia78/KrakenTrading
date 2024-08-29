@@ -15,14 +15,14 @@ examples_received = 0
 
 NUM_EXAMPLES = 4459
 
-total_raw_ticker_stream = get_ticker_stream('/Users/dancing_ghosts/Code/WebApps/KrakenTrading/ticker-2-model')
+total_raw_ticker_stream = get_ticker_stream('/home/cole/Code/KrakenTrading/ticker-2-model')
 raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
 
 #create model
 model, test_mse, standard_scalar, pair_cache = create_model(
     raw_ticker_stream, pair_name, window_len=window_length, 
-    generate_y=create_classification_labels, output_activation='sigmoid',
-    loss='binary_crossentropy', metric='accuracy')
+    generate_y=create_classification_labels, output_activation='softmax',
+    loss='categorical_crossentropy', metric='accuracy', output_size=3)
 
 # save index of pair bid to predict
 pair_index = list(pair_cache.keys()).index(pair_name)
@@ -44,6 +44,7 @@ examples_processed = NUM_EXAMPLES
 examples_received = NUM_EXAMPLES
 
 last_prediction = None
+last_pair_bid = None
 errors = []
 
 
@@ -83,26 +84,40 @@ for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
     # get model prediction
     prediction = model(x) # tensor of shape (1,1,1)
     
-    # need to un-standardize this value to get the actual value to trade
+    
     value = prediction[0].numpy()
-    value = (value*std) + mean
+    value = np.argmax(value) # since it's one-hot encoded
+    # value = (value*std) + mean # need to un-standardize this value to get the actual value to trade
     value = value.item()
     """print('----------------')
     print(f'{pair_name} at next ticker update: ', value)
     print('----------------\n')"""
 
+    current_pair_bid = float(pair_cache[pair_name][bid_index])
+
     # TODO - this monitoring of the model should happen on a different thread?
     # grab the last predicted value and compare it to the current ticker value
     if last_prediction is not None:
-        # calculate error from previous prediction with current bid price
-        current_pair_bid = pair_cache[pair_name][bid_index]
-        errors.append(float(current_pair_bid) - last_prediction) # positive == underestimated
+        """ # calculate error from previous prediction with current bid price
+        errors.append(float(current_pair_bid) - last_prediction) # positive == underestimated """
+        diff = current_pair_bid - last_pair_bid
+        if diff < 0:
+            actual_y = 0
+        elif diff == 0:
+            actual_y = 1
+        else:
+            actual_y = 2
+
+        errors.append(1.0 if actual_y != last_prediction else 0.0)
+        
         print('----------------')
         print(f'predicted: {last_prediction}')
-        print(f'actual: {current_pair_bid}')
+        print(f'actual: {actual_y}')
         print(f'mean error: {np.mean(np.array(errors))}')
         print('----------------\n')
+
     last_prediction = value
+    last_pair_bid = current_pair_bid
 
     # update examples processed
     examples_processed = _examples_received # use local value in case global one was updated while this thread was sleeping

@@ -6,7 +6,7 @@ from keras.callbacks import EarlyStopping
 
 from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window, create_regression_labels, FEATURE_MAP, FEATURES_PER_PAIR
 
-def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_y=create_regression_labels, output_activation='linear', loss='mse', metric='mse'):
+def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_y=create_regression_labels, output_activation='linear', loss='mse', metric='mse', output_size=1):
 
     ticker_stream, pair_cache = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
 
@@ -69,7 +69,7 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_
         keras.layers.Dense(1024, activation='relu', input_shape=(None, num_input_parameters)),
         keras.layers.Dropout(rate=0.5),
         keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1, activation=output_activation)
+        keras.layers.Dense(output_size, activation=output_activation)
     ])
 
     model.compile(optimizer='adam', loss=loss, metrics=[metric])

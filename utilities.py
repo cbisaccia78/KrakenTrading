@@ -262,10 +262,17 @@ def create_regression_labels(X, window_length, feature_index):
     return X[window_length:, feature_index]
 
 def create_classification_labels(X, window_length, feature_index):
+    # one hot encode down, stay, up
     y_iter = X[window_length-1:, feature_index] # minus 1 because we need previous value to determine if it changed
     y_num_examples = y_iter.shape[0] - 1
     y = np.zeros(y_num_examples)
     for i in range(0, y_num_examples):
-        y[i] = 1.0 if y_iter[i+1] - y_iter[i] > 0 else 0.0
-    
-    return y
+        diff = y_iter[i+1] - y_iter[i]
+        if diff < 0:
+            y[i] = 0
+        elif diff == 0:
+            y[i] = 1
+        else:
+            y[i] = 2
+    y = y.astype(int)
+    return np.eye(3)[y]
