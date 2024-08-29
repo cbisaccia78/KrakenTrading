@@ -4,14 +4,13 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from keras.callbacks import EarlyStopping
 
-from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window, FEATURE_MAP
+from utilities import vectorize_ticker_stream, timestamp_to_percent, vectorize_window, create_regression_labels, FEATURE_MAP, FEATURES_PER_PAIR
 
-def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
+def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_y=create_regression_labels, output_activation='linear', loss='mse', metric='mse'):
 
     ticker_stream, pair_cache = vectorize_ticker_stream(raw_ticker_stream) # 200000 is approximately 28 gb of memory, 100000 is approximately 17gb
 
     pair_index = list(pair_cache.keys()).index(pair_name)
-    features_per_pair = len(FEATURE_MAP)
 
     # convert to numpy array
     X = np.array(ticker_stream, dtype=np.float32)
@@ -40,11 +39,11 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
 
     # create labels
     bid_index = FEATURE_MAP['best_bid']
-    pair_bid_index = 1 + pair_index*features_per_pair + bid_index # add 1 because of timestamp
+    pair_bid_index = 1 + pair_index*FEATURES_PER_PAIR + bid_index # add 1 because of timestamp
 
-    y_train_std = X_train_std[window_len:, pair_bid_index]
-    y_valid_std = X_valid_std[window_len:, pair_bid_index]
-    y_test_std = X_test_std[window_len:, pair_bid_index]
+    y_train_std = generate_y(X_train_std, window_len, pair_bid_index)
+    y_valid_std = generate_y(X_valid_std, window_len, pair_bid_index)
+    y_test_std = generate_y(X_test_std, window_len, pair_bid_index)
 
     # create windows
     X_train_std = vectorize_window(X_train_std, window_len, stride)
@@ -70,19 +69,19 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1):
         keras.layers.Dense(1024, activation='relu', input_shape=(None, num_input_parameters)),
         keras.layers.Dropout(rate=0.5),
         keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1, activation='linear')
+        keras.layers.Dense(1, activation=output_activation)
     ])
 
-    model.compile(optimizer='adam', loss='mse', metrics=['mse'])
+    model.compile(optimizer='adam', loss=loss, metrics=[metric])
 
-    early_stopping_callback = EarlyStopping(monitor='val_mse', patience=5, restore_best_weights=True)
+    early_stopping_callback = EarlyStopping(monitor=f'val_{metric}', patience=5, restore_best_weights=True)
 
     # fit training data
     _ = model.fit(train_ds, epochs=250, validation_data=valid_ds, callbacks=[early_stopping_callback])
 
     # evaluate test data
-    _, test_mse = model.evaluate(test_ds)
+    _, test_metric = model.evaluate(test_ds)
 
-    print('test_mse : {}'.format(test_mse))
+    print(f'test_{metric} : {test_metric}')
 
-    return model, test_mse, scalar, pair_cache
+    return model, test_metric, scalar, pair_cache
