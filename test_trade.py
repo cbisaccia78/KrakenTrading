@@ -3,6 +3,7 @@ import numpy as np
 from high_bid_model import create_model
 from utilities import timestamp_to_percent, vectorize_window, vectorize_from_cache, update_pair_cache, FEATURE_MAP, create_regression_labels, create_classification_labels
 from database import get_ticker_stream
+from keras.metrics import Recall
 
 window_length = 5
 
@@ -22,7 +23,7 @@ raw_ticker_stream = total_raw_ticker_stream[:NUM_EXAMPLES]
 model, test_mse, standard_scalar, pair_cache = create_model(
     raw_ticker_stream, pair_name, window_len=window_length, 
     generate_y=create_classification_labels, output_activation='softmax',
-    loss='categorical_crossentropy', metric='accuracy', output_size=3)
+    loss='categorical_crossentropy', metric=Recall(), output_size=3)
 
 # save index of pair bid to predict
 pair_index = list(pair_cache.keys()).index(pair_name)
@@ -109,12 +110,12 @@ for i in range(NUM_EXAMPLES, len(total_raw_ticker_stream)):
             actual_y = 2
 
         errors.append(1.0 if actual_y != last_prediction else 0.0)
-        
-        print('----------------')
-        print(f'predicted: {last_prediction}')
-        print(f'actual: {actual_y}')
-        print(f'mean error: {np.mean(np.array(errors))}')
-        print('----------------\n')
+        if actual_y != 1:
+            print('----------------')
+            print(f'predicted: {last_prediction}')
+            print(f'actual: {actual_y}')
+            print(f'mean error: {np.mean(np.array(errors))}')
+            print('----------------\n')
 
     last_prediction = value
     last_pair_bid = current_pair_bid
