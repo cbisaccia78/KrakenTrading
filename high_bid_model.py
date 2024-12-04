@@ -26,67 +26,61 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_
     # train test validation split
     num_examples = X.shape[0]
 
-    train_valid_split = int(0.8*num_examples)
+    test_split_idx = int(0.8*num_examples)
 
-    X_train_valid = X[0:train_valid_split]
+    valid_split_idx = int(0.8*test_split_idx)
 
-    train_split = int(0.8*train_valid_split)
-    X_train = X_train_valid[0:train_split]
-    X_valid = X_train_valid[train_split:]
-    X_test = X[train_valid_split:]
-
-    y_train = generate_y(X_train, window_len, pair_bid_index)
-    y_valid = generate_y(X_valid, window_len, pair_bid_index)
-    y_test = generate_y(X_test, window_len, pair_bid_index)
+    y = generate_y(X, window_len, pair_bid_index)
 
     # Standardize features
     scalar = StandardScaler()
-    X_train_std = scalar.fit_transform(X_train)
-    X_valid_std = scalar.transform(X_valid)
-    X_test_std = scalar.transform(X_test)
+    X_std = scalar.fit_transform(X)
 
-    # create windows
-    X_train_std = vectorize_window(X_train_std, window_len, stride)
-    X_valid_std = vectorize_window(X_valid_std, window_len, stride)
-    X_test_std = vectorize_window(X_test_std, window_len, stride)
 
-    # remove final row (no label for it)
-    X_train_std = X_train_std[:-1]
-    X_valid_std = X_valid_std[:-1]
-    X_test_std = X_test_std[:-1]
+    BATCH_SIZE = 8
 
-    batch_size = 32
+    train_ds = keras.utils.timeseries_dataset_from_array(
+        X_std, 
+        y,
+        sequence_length=window_len,
+        batch_size=BATCH_SIZE,
+        end_index=valid_split_idx
+    )
 
-    # create datasets
-    train_ds = tf.data.Dataset.from_tensor_slices((X_train_std, y_train)).batch(batch_size)
-    valid_ds = tf.data.Dataset.from_tensor_slices((X_valid_std, y_valid)).batch(batch_size)
-    test_ds = tf.data.Dataset.from_tensor_slices((X_test_std, y_test)).batch(batch_size)
+    valid_ds = keras.utils.timeseries_dataset_from_array(
+        X_std, 
+        y,
+        sequence_length=window_len,
+        batch_size=BATCH_SIZE,
+        start_index=valid_split_idx,
+        end_index=test_split_idx
+    )
+
+    test_ds = keras.utils.timeseries_dataset_from_array(
+        X_std, 
+        y,
+        sequence_length=window_len,
+        batch_size=BATCH_SIZE,
+        start_index=test_split_idx
+    )
 
 
     # create model
-    num_input_parameters = X_train_std.shape[1]
-    model = keras.Sequential([
-        keras.layers.Dense(1024, activation='relu', input_shape=(None, num_input_parameters)),
-        keras.layers.Dropout(rate=0.3),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dense(output_size, activation=output_activation)
-    ])
+    num_input_parameters = X_std.shape[1]
+
+    inputs = keras.Input(shape=(window_len, num_input_parameters))
+    x = keras.layers.Flatten()(inputs)
+    x = keras.layers.Dense(1024, activation='relu')(x)
+    x = keras.layers.Dense(1024, activation='relu')(x)
+    x = keras.layers.Dropout(rate=0.3)(x)
+    outputs = keras.layers.Dense(output_size, activation=output_activation)(x)
+    model = keras.Model(inputs, outputs)
 
     model.compile(optimizer='adam', loss=loss, metrics=[metric])
 
     early_stopping_callback = EarlyStopping(monitor=f'val_recall', patience=5, restore_best_weights=True)
 
-    original_y_train_labels = np.argmax(y_train, axis=1)
+    original_y_train_labels = np.argmax(y[:valid_split_idx], axis=1)
     class_weights = class_weight.compute_class_weight('balanced',
                                                   classes=np.unique(original_y_train_labels),
                                                   y=original_y_train_labels)
