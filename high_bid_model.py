@@ -69,9 +69,8 @@ def create_model(raw_ticker_stream, pair_name, window_len=5, stride=1, generate_
     num_input_parameters = X_std.shape[1]
 
     inputs = keras.Input(shape=(window_len, num_input_parameters))
-    x = keras.layers.Flatten()(inputs)
-    x = keras.layers.Dense(1024, activation='relu')(x)
-    x = keras.layers.Dense(1024, activation='relu')(x)
+    x = keras.layers.LSTM(1024, return_sequences=True)(inputs)
+    x = keras.layers.LSTM(1024)(x)
     x = keras.layers.Dropout(rate=0.3)(x)
     outputs = keras.layers.Dense(output_size, activation=output_activation)(x)
     model = keras.Model(inputs, outputs)
